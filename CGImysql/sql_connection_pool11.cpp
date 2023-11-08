@@ -18,14 +18,14 @@ bool connection_pool::mysqlConnect(MYSQL **con)
     *con = mysql_init(*con);
     if(*con == nullptr)
     {
-        LOG_ERROR("MySQL Error,%s %d",__FILE__,__LINE__);
+        LOG_ERROR("MySQL Error,",__FILE__," ",__LINE__);
         return false;
     }
     *con = mysql_real_connect(*con,m_url.c_str(),m_User.c_str(),m_PassWord.c_str(),
                                 m_DatabaseName.c_str(),m_Port,NULL,0);
     if(*con == nullptr)
     {
-        LOG_ERROR("MySQL Error, %s %d",__FILE__,__LINE__);
+        LOG_ERROR("MySQL Error, ",__FILE__," ",__LINE__);
         return false;
     }
     return true;

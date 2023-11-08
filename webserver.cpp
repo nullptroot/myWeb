@@ -182,7 +182,7 @@ void WebServer::adjust_timer(util_timer *timer)
     time_t cur = time(NULL);
     timer->expire = cur + 3 * TIMESLOT;
     utils.m_timer_lst.adjust_timer(timer);
-    LOG_INFO("%s","adjust timer once");
+    LOG_INFO("adjust timer once");
 }
 
 void WebServer::deal_timer(util_timer *timer,int sockfd)
@@ -191,7 +191,7 @@ void WebServer::deal_timer(util_timer *timer,int sockfd)
     timer->cb_func(&users_timer[sockfd]);
     if(timer)
         utils.m_timer_lst.del_timer(timer);
-    LOG_INFO("close fd %d",users_timer[sockfd].sockfd);
+    LOG_INFO("close fd ",users_timer[sockfd].sockfd);
 }
 
 bool WebServer::dealclientdata()
@@ -204,13 +204,13 @@ bool WebServer::dealclientdata()
         int connfd = accept(m_listenfd,(struct sockaddr *)&client_address,&client_addlengeh);
         if(connfd < 0)
         {
-            LOG_ERROR("%s:errno is %d","accept error",errno);
+            LOG_ERROR("accept error :errno is ",errno);
             return false;
         }
         if(http_conn::m_user_count >= MAX_FD)
         {
             utils.show_error(connfd,"Internal server busy");
-            LOG_ERROR("%s","Internal server busy");
+            LOG_ERROR("Internal server busy");
             return false;
         }
         timer(connfd,client_address);
@@ -222,13 +222,13 @@ bool WebServer::dealclientdata()
             int connfd = accept(m_listenfd,(struct sockaddr *)&client_address,&client_addlengeh);
             if(connfd < 0)
             {
-                LOG_ERROR("%s:errno is %d","accept error",errno);
+                LOG_ERROR("accept error:errno is ",errno);
                 break;
             }
             if(http_conn::m_user_count >= MAX_FD)
             {
                 utils.show_error(connfd,"Internal server busy");
-                LOG_ERROR("%s","Internal server busy");
+                LOG_ERROR("Internal server busy");
                 break;
             }
             timer(connfd,client_address);
@@ -299,7 +299,7 @@ void WebServer::dealwithread(int sockfd)
     {
         if(users[sockfd].read_once())
         {
-            LOG_INFO("deal with the client(%s)",inet_ntoa(users[sockfd].get_address()->sin_addr));
+            LOG_INFO("deal with the client(",inet_ntoa(users[sockfd].get_address()->sin_addr),")");
 
             m_pool->append_p(&users[sockfd]);
 
@@ -342,7 +342,7 @@ void WebServer::dealwithwrite(int sockfd)
     {
         if(users[sockfd].write())
         {
-            LOG_INFO("send data to client(%s)",inet_ntoa(users[sockfd].get_address()->sin_addr));
+            LOG_INFO("send data to client(",inet_ntoa(users[sockfd].get_address()->sin_addr),")");
             if(timer)
                 adjust_timer(timer);
         }
@@ -363,7 +363,7 @@ void WebServer::eventLoop()
         int number = epoll_wait(m_epollfd,events,MAX_EVENT_NUMBER,-1);
         if(number < 0 && errno != EINTR)
         {
-            LOG_ERROR("%s","epoll failure");
+            LOG_ERROR("epoll failure");
             break;
         }
         for(int i = 0; i < number; ++i)
@@ -385,7 +385,7 @@ void WebServer::eventLoop()
             {
                 bool flag = dealwithsignal(timeout,stop_server);
                 if(flag == false)
-                    LOG_ERROR("%s","dealwithsignal failure")
+                    LOG_ERROR("dealwithsignal failure")
             }
             else if(events[i].events & EPOLLIN)
             {
@@ -399,7 +399,7 @@ void WebServer::eventLoop()
         if(timeout == 1)
         {
             utils.timer_handler();
-            LOG_INFO("%s","timer tick");
+            LOG_INFO("timer tick");
 
             timeout = false;
         }

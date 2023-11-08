@@ -19,7 +19,7 @@ void http_conn::initmysql_result(connection_pool *connPool)
 /*下面对users的操作不用加锁，因为这个函数仅执行一次*/
     auto mysql = connPool->GetConnection();
     if(mysql_query(mysql.get(),"select username,passwd from user"))
-        LOG_ERROR("select error:%s",mysql_error(mysql.get()));
+        LOG_ERROR("select error:",mysql_error(mysql.get()));
     MYSQL_RES *result = mysql_store_result(mysql.get());
 
     int num_fields = mysql_num_fields(result);
@@ -251,7 +251,7 @@ http_conn::HTTP_CODE http_conn::parse_headers(char *text)
         }
         else
         {
-            LOG_INFO("oop!unknow header: %s", text);
+            LOG_INFO("oop!unknow header: ", text);
         }
     }
     return HTTP_CODE::NO_REQUEST;
@@ -280,7 +280,7 @@ http_conn::HTTP_CODE http_conn::process_read()
         text = get_line();//return m_read_buf + m_start_line;
         //text是一行内容
         m_start_line = m_checked_idx;
-        LOG_INFO("%s", text);
+        LOG_INFO(text);
         switch (m_check_state)
         {
         case CHECK_STATE::CHECK_STATE_REQUESTLINE:
@@ -484,7 +484,7 @@ bool http_conn::add_response(const char *format, ...)
     m_write_idx += len;
     va_end(arg_list);//结束对可变参数的操作
 
-    LOG_INFO("request:%s", m_write_buf);
+    LOG_INFO("request:", m_write_buf);
 
     return true;
 }

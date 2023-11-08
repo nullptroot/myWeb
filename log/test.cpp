@@ -7,51 +7,38 @@ using std::is_same;
 using std::is_constructible;
 using std::cout;
 using std::endl;
-void fun(string &s){}
 
+/*
+与运行期 if 语句有所不同，编译期 if 语句中的判断条件必须是编译期常量。
+与预处理期 if 语句有所不同，编译期 if 语句中被丢弃的分支仍然需要进行语法检查。
+
+这不就可以代替vsnprintf的日志写入了吗*/
+// void fun(string &s){}
+template <typename T,typename... Args>
+void f(int level,const T &t,const Args&... args)
+{
+    string s = "";
+    fun(s,args);
+    cout<<s<<endl;
+}
 template <typename T,typename... Args>
 void fun(string &result,const T &t,const Args&... args)
 {
-    if(is_same<string,T>::value)
-    {
+    if constexpr (is_constructible<std::string,T>::value)
         result += t;
-        cout<<"true"<<" ";
-    }
     else
-    {
-        cout<<"false:  "<<is_constructible<int,T>::value<<" ";
-        result += std::to_string((int)t);
-    }
-    fun(result,args...);
-}
-template <typename T>
-void f(const T &s)
-{
-    if(is_same<string,T>::value)
-        cout<<"true"<<endl;
-    else    
-        cout<<"false"<<endl;
-}
-
-void func1(const char *format,...)
-{
-    va_list valist;
-    va_start(valist,format);
-    printf(format,valist);
-    // cout<<valist<<endl;
-    va_end(valist);
+        result += std::to_string(t);
+    if constexpr (sizeof...(args) >= 1)
+        fun(result,args...);
 }
 int main()
 {
-    // string s = "";
-    // const auto& b = string("assas");
-    // f(b);
-    // cout<<endl;
-    // fun(s,b,18,60,9.8);
-    // cout<<endl;
-    // cout<<s<<endl;
-    // func1("%d  %s  %s",8,"wqwqw","wqedf");
-    std::string s = "";
-    s.resize(100);
-    sprintf(s.c_str(),"%d,%d",10,8);
+    string s = "";
+    const auto& b = string("assas");
+
+    fun(s,b,18,60,9.8);
+    f(1,2,"wqwq",b);
+    // f(s,"%s,%d,%d","dasda ",10,56);
+    cout<<s<<endl;
+
 }

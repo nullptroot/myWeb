@@ -1,5 +1,5 @@
 
-filterSrc = ./http/test.cpp ./log/test.cpp ./timer/time_heap.cpp ./timer/timeslice.cpp
+filterSrc = ./http/test.cpp ./log/test.cpp ./log/testLog.cpp ./timer/time_heap.cpp ./timer/timeslice.cpp
 libNeed = -lmysqlclient
 stdNeed = -std=c++20
 
