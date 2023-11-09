@@ -29,6 +29,10 @@ const int TIMESLOT = 5;
 class WebServer
 {
     public:
+        using ETMode = std::true_type;
+        using LTMode = std::false_type;
+        using ReactorMode = std::true_type;
+        using ProactorMode = std::false_type;
         int m_port;
         std::string m_root;
         int m_log_write;
@@ -80,9 +84,15 @@ class WebServer
         void adjust_timer(util_timer *timer);
         void deal_timer(util_timer *timer,int sockfd);
         bool dealclientdata();
+        bool _dealclientdata(ETMode);
+        bool _dealclientdata(LTMode);
         bool dealwithsignal(bool &timeout,bool &stop_server);
         void dealwithread(int sockfd);
+        void _dealwithread(int sockfd,ReactorMode);
+        void _dealwithread(int sockfd,ProactorMode);
         void dealwithwrite(int sockfd);
+        void _dealwithwrite(int sockfd,ReactorMode);
+        void _dealwithwrite(int sockfd,ProactorMode);
 };
 
 #endif

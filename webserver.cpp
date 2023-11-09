@@ -2,21 +2,14 @@
 
 WebServer::WebServer()
 {
-    // users = new http_conn[MAX_FD];
     users.resize(MAX_FD);
 
     char server_path[200];
     getcwd(server_path,200);
 
-    // char root[6] = "/root";
     std::string root = "/root";
-    // m_root = (char *)malloc(strlen(server_path)+strlen(root)+1);
     m_root = server_path;
     m_root += root;
-    // strcpy(m_root,server_path);
-    // strcat(m_root,root);
-
-    // users_timer = new client_data<util_timer>[MAX_FD];
     users_timer.resize(MAX_FD);
 }
 WebServer::~WebServer()
@@ -25,9 +18,6 @@ WebServer::~WebServer()
     close(m_listenfd);
     close(m_pipefd[0]);
     close(m_pipefd[1]);
-    // delete [] users;
-    // delete [] users_timer;
-    // delete m_pool;
 }
 
 void WebServer::init(int port,std::string user,std::string passWord,std::string databaseName,
@@ -193,51 +183,55 @@ void WebServer::deal_timer(util_timer *timer,int sockfd)
         utils.m_timer_lst.del_timer(timer);
     LOG_INFO("close fd ",users_timer[sockfd].sockfd);
 }
-
-bool WebServer::dealclientdata()
+bool  WebServer::dealclientdata()
+{
+    if(m_LISTENTigmode)
+        return _dealclientdata(ETMode());
+    else
+        return _dealclientdata(LTMode());
+}
+bool  WebServer::_dealclientdata(WebServer::ETMode)
 {
     struct sockaddr_in client_address;
     socklen_t client_addlengeh = sizeof(client_address);
-
-    if(m_LISTENTigmode == 0)
+    int connfd = accept(m_listenfd,(struct sockaddr *)&client_address,&client_addlengeh);
+    if(connfd < 0)
+    {
+        LOG_ERROR("accept error :errno is ",errno);
+        return false;
+    }
+    if(http_conn::m_user_count >= MAX_FD)
+    {
+        utils.show_error(connfd,"Internal server busy");
+        LOG_ERROR("Internal server busy");
+        return false;
+    }
+    timer(connfd,client_address);
+    return true;
+}
+bool WebServer::_dealclientdata(WebServer::LTMode)
+{
+    struct sockaddr_in client_address;
+    socklen_t client_addlengeh = sizeof(client_address);
+    while(true)
     {
         int connfd = accept(m_listenfd,(struct sockaddr *)&client_address,&client_addlengeh);
         if(connfd < 0)
         {
-            LOG_ERROR("accept error :errno is ",errno);
-            return false;
+            LOG_ERROR("accept error:errno is ",errno);
+            break;
         }
         if(http_conn::m_user_count >= MAX_FD)
         {
             utils.show_error(connfd,"Internal server busy");
             LOG_ERROR("Internal server busy");
-            return false;
+            break;
         }
         timer(connfd,client_address);
+        return true;
     }
-    else
-    {
-        while(true)
-        {
-            int connfd = accept(m_listenfd,(struct sockaddr *)&client_address,&client_addlengeh);
-            if(connfd < 0)
-            {
-                LOG_ERROR("accept error:errno is ",errno);
-                break;
-            }
-            if(http_conn::m_user_count >= MAX_FD)
-            {
-                utils.show_error(connfd,"Internal server busy");
-                LOG_ERROR("Internal server busy");
-                break;
-            }
-            timer(connfd,client_address);
-            return true;
-        }
-        /*这里对应上述的两个if条件句的break*/
-        return false;
-    }
-    return true;
+    /*这里对应上述的两个if条件句的break*/
+    return false;
 }
 
 bool WebServer::dealwithsignal(bool &timeout,bool &stop_server)
@@ -274,85 +268,93 @@ bool WebServer::dealwithsignal(bool &timeout,bool &stop_server)
 
 void WebServer::dealwithread(int sockfd)
 {
-    util_timer *timer = users_timer[sockfd].timer;
     if(m_actormodel)
-    {
-        if(timer)
-            adjust_timer(timer);
-        m_pool->append(&users[sockfd],0);
-        while(true)
-        {
-            if(users[sockfd].improv == 1)
-            {
-                if(users[sockfd].timer_flag == 1)
-                {
-                    deal_timer(timer,sockfd);
-                    
-                    users[sockfd].timer_flag = 0;
-                }
-                users[sockfd].improv = 0;
-                break;
-            }
-        }
-    }
+        _dealwithread(sockfd,ReactorMode());
     else
+         _dealwithread(sockfd,ReactorMode());
+}
+void WebServer::_dealwithread(int sockfd,WebServer::ReactorMode)
+{
+    util_timer *timer = users_timer[sockfd].timer;
+    if(timer)
+        adjust_timer(timer);
+    m_pool->append(&users[sockfd],0);
+    while(true)
     {
-        if(users[sockfd].read_once())
+        if(users[sockfd].improv == 1)
         {
-            LOG_INFO("deal with the client(",inet_ntoa(users[sockfd].get_address()->sin_addr),")");
-
-            m_pool->append_p(&users[sockfd]);
-
-            if(timer)
-                adjust_timer(timer);
-        }
-        else
-        {
-            deal_timer(timer,sockfd);
+            if(users[sockfd].timer_flag == 1)
+            {
+                deal_timer(timer,sockfd);
+                
+                users[sockfd].timer_flag = 0;
+            }
+            users[sockfd].improv = 0;
+            break;
         }
     }
 }
-
+void WebServer::_dealwithread(int sockfd,WebServer::ProactorMode)
+{
+    util_timer *timer = users_timer[sockfd].timer;
+    if(users[sockfd].read_once())
+    {
+        LOG_INFO("deal with the client(",inet_ntoa(users[sockfd].get_address()->sin_addr),")");
+        m_pool->append_p(&users[sockfd]);
+        if(timer)
+            adjust_timer(timer);
+    }
+    else
+    {
+        deal_timer(timer,sockfd);
+    }
+}
 void WebServer::dealwithwrite(int sockfd)
 {
     util_timer *timer = users_timer[sockfd].timer;
 
     if(m_actormodel == 1)
-    {
-        if(timer)
-            adjust_timer(timer);
-        m_pool->append(&users[sockfd],1);
-        while(true)
-        {
-            /*这里的判断应该时确定从内核读或者写的函数已经返回了*/
-            if(users[sockfd].improv == 1)
-            {
-                if(users[sockfd].timer_flag == 1)
-                {
-                    deal_timer(timer,sockfd);
-                    
-                    users[sockfd].timer_flag = 0;
-                }
-                users[sockfd].improv = 0;
-                break;
-            }
-        }
-    }
+        _dealwithwrite(sockfd,ReactorMode());
     else
+        _dealwithwrite(sockfd,ProactorMode());
+    
+}
+void WebServer::_dealwithwrite(int sockfd,WebServer::ReactorMode)
+{
+    util_timer *timer = users_timer[sockfd].timer;
+    if(timer)
+        adjust_timer(timer);
+    m_pool->append(&users[sockfd],1);
+    while(true)
     {
-        if(users[sockfd].write())
+        /*这里的判断应该时确定从内核读或者写的函数已经返回了*/
+        if(users[sockfd].improv == 1)
         {
-            LOG_INFO("send data to client(",inet_ntoa(users[sockfd].get_address()->sin_addr),")");
-            if(timer)
-                adjust_timer(timer);
-        }
-        else
-        {
-            deal_timer(timer,sockfd);
+            if(users[sockfd].timer_flag == 1)
+            {
+                deal_timer(timer,sockfd);
+                
+                users[sockfd].timer_flag = 0;
+            }
+            users[sockfd].improv = 0;
+            break;
         }
     }
 }
-
+void WebServer::_dealwithwrite(int sockfd,WebServer::ProactorMode)
+{
+    util_timer *timer = users_timer[sockfd].timer;
+    if(users[sockfd].write())
+    {
+        LOG_INFO("send data to client(",inet_ntoa(users[sockfd].get_address()->sin_addr),")");
+        if(timer)
+            adjust_timer(timer);
+    }
+    else
+    {
+        deal_timer(timer,sockfd);
+    }
+}
 void WebServer::eventLoop()
 {
     bool timeout = false;
