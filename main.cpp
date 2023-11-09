@@ -3,16 +3,17 @@
 
 int main(int argc,char *argv[])
 {
-    string user = "*";
-    string passwd = "*";
-    string databasename = "*";
-
+    if(argc < 2)
+    {
+        std::cout<<"usage "<<argv[0]<<" configFile.json"<<std::endl;
+        return 1;
+    }
     Config config;
-    config.parse_arg(argc,argv);
+    config.parse_config_file(argv[1]);
     
     WebServer server;
     
-    server.init(config.PORT,user,passwd,databasename,config.LOGWrite,
+    server.init(config.PORT,config.user,config.password,config.databaseName,config.LOGWrite,
                     config.OPT_LINGER,config.TRIGMode,config.sql_num,
                     config.thread_num,config.close_log,config.actor_model);
     

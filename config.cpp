@@ -1,53 +1,35 @@
 #include "config.h"
-void Config::parse_arg(int argc, char*argv[]){//这就是对 命令行参数进行解析的类内方法
-    int opt;
-    const char *str = "p:l:m:o:s:t:c:a:";
-    while ((opt = getopt(argc, argv, str)) != -1)//解析命令行参数的
-    {
-        switch (opt)
-        {
-        case 'p':
-        {
-            PORT = atoi(optarg);
-            break;
-        }
-        case 'l':
-        {
-            LOGWrite = atoi(optarg);
-            break;
-        }
-        case 'm':
-        {
-            TRIGMode = atoi(optarg);
-            break;
-        }
-        case 'o':
-        {
-            OPT_LINGER = atoi(optarg);
-            break;
-        }
-        case 's':
-        {
-            sql_num = atoi(optarg);
-            break;
-        }
-        case 't':
-        {
-            thread_num = atoi(optarg);
-            break;
-        }
-        case 'c':
-        {
-            close_log = atoi(optarg);
-            break;
-        }
-        case 'a':
-        {
-            actor_model = atoi(optarg);
-            break;
-        }
-        default:
-            break;
-        }
-    }
+bool Config::parse_config_file(const std::string &configFile)
+{
+    Json::Reader reader;
+	Json::Value root;
+	std::ifstream in(configFile, std::ios::binary);
+	if( !in.is_open() )  
+	{ 
+	    std::cout << "Error opening config file"<<std::endl;; 
+	    return false; 
+	}
+	if(reader.parse(in,root))
+	{
+        PORT = root["PORT"].asInt();
+        LOGWrite = root["LOGWrite"].asInt();
+        TRIGMode = root["TRIGMode"].asInt();
+        LISTENTrigmode = root["LISTENTrigmode"].asInt();
+        CONNTrigmode = root["CONNTrigmode"].asInt();
+        OPT_LINGER = root["OPT_LINGER"].asInt();
+        sql_num = root["sql_num"].asInt();
+        thread_num = root["thread_num"].asInt();
+        close_log = root["close_log"].asInt();
+        actor_model = root["actor_model"].asInt();
+        user = root["user"].asString();
+        password = root["passwd"].asString();
+        databaseName = root["databasename"].asString();
+	}
+	else
+	{
+	    std::cout << "Error parse config file\n" << std::endl;
+        return false;	
+	}
+	in.close();
+    return true;
 }

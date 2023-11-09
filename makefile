@@ -1,9 +1,9 @@
 
-filterSrc = ./http/test.cpp ./log/test.cpp ./log/testLog.cpp ./timer/time_heap.cpp ./timer/timeslice.cpp
+filterSrc = ./http/test.cpp ./log/test.cpp ./log/testLog.cpp ./timer/time_heap.cpp ./timer/timeslice.cpp ./dist/testJson.cpp
 libNeed = -lmysqlclient
 stdNeed = -std=c++20
 
-allSrc=$(wildcard ./*.cpp ./CGImysql/*.cpp ./http/*.cpp ./log/*.cpp ./timer/*.cpp)
+allSrc=$(wildcard ./*.cpp ./CGImysql/*.cpp ./http/*.cpp ./log/*.cpp ./timer/*.cpp ./dist/*.cpp)
 # $(info $(allSrc))
 src=$(filter-out $(filterSrc),$(allSrc))
 # $(info $(src))
