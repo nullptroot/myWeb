@@ -41,7 +41,7 @@ void WebServer::trig_mode()
     if(m_TRIGMode == 0)
     {
         m_LISTENTigmode = 0;
-        m_CONNTrigmode = 1;
+        m_CONNTrigmode = 0;
     }
     else if(m_TRIGMode == 1)
     {
@@ -271,7 +271,7 @@ void WebServer::dealwithread(int sockfd)
     if(m_actormodel)
         _dealwithread(sockfd,ReactorMode());
     else
-         _dealwithread(sockfd,ReactorMode());
+        _dealwithread(sockfd,ProactorMode());
 }
 void WebServer::_dealwithread(int sockfd,WebServer::ReactorMode)
 {
